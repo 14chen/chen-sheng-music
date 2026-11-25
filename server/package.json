@@ -1,0 +1,26 @@
+{
+  "name": "my-music-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "橙声君服务器：本地曲库 + 可插拔合规在线音源",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "scan": "node src/scan-cli.js",
+    "test": "node --test test-auth.mjs test-lrc-path.mjs test-lyrics-structure.mjs test-p2.mjs test-reliability.mjs"
+  },
+  "dependencies": {
+    "axios": "^1.21.1",
+    "big-integer": "^1.6.52",
+    "cheerio": "^1.2.0",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.1.1",
+    "dayjs": "^1.11.23",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "he": "^2.0.0",
+    "music-metadata": "^11.7.0",
+    "qs": "^6.17.1"
+  }
+}

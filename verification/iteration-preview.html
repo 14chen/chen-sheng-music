@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>橙声君 · 迭代预览（播放页/迷你条/后台控制）</title>
+<style>
+:root{--bg:#0e0d16;--acc:#a78bfa;--txt:#f2f2f7;--dim:rgba(242,242,247,.55);--green:#4a5d4a}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(900px 500px at 30% -10%,#3a2c6e,#0e0d16 55%);color:var(--txt);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;padding:16px;display:flex;flex-direction:column;align-items:center}
+.bar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
+.bar button{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:var(--txt);padding:7px 12px;border-radius:18px;cursor:pointer;font-size:12px;min-height:36px}
+.bar button.active{background:var(--acc);border-color:var(--acc);color:#fff}
+.phone{width:min(100%,390px);height:780px;border-radius:28px;padding:16px;background:linear-gradient(160deg,rgba(255,255,255,.1),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.13);backdrop-filter:blur(20px);position:relative;overflow:hidden}
+.top{text-align:center;font-size:15px;font-weight:700;margin-bottom:8px}
+.cover{width:240px;height:240px;border-radius:20px;margin:20px auto;background:linear-gradient(135deg,#7c5cff,#2a1b5e);display:flex;align-items:center;justify-content:center;font-size:80px;box-shadow:0 12px 40px rgba(124,92,255,.35)}
+.cover.spin{animation:spin 18s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lyr{height:330px;overflow:hidden;-webkit-mask-image:linear-gradient(transparent,#000 16%,#000 84%,transparent);mask-image:linear-gradient(transparent,#000 16%,#000 84%,transparent)}
+.entry{text-align:center;padding:11px 8px;margin-bottom:8px;transition:all .3s}
+.entry .o{font-size:18px;font-weight:600}
+.entry .t{font-size:13px;margin-top:6px;color:var(--dim)}
+.entry.cur .o{font-size:26px;font-weight:800;color:var(--acc);text-shadow:0 0 26px rgba(167,139,250,.5)}
+.entry.cur .t{font-size:15px;color:var(--txt)}
+.entry.near{opacity:.48;transform:scale(.9)} .entry.far{opacity:.24;transform:scale(.8)}
+.prog{height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:10px 0}
+.prog i{display:block;height:100%;background:var(--acc);border-radius:2px}
+.times{display:flex;justify-content:space-between;font-size:11px;color:var(--dim)}
+.ctrls{display:flex;justify-content:space-around;align-items:center;margin-top:14px}
+.ctrls button{width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:var(--txt);font-size:18px;cursor:pointer}
+.ctrls button.play{background:var(--acc);font-size:22px}
+.mini{display:flex;align-items:center;gap:10px;padding:10px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1)}
+.mini .thumb{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#7c5cff,#2a1b5e);display:flex;align-items:center;justify-content:center;font-size:20px}
+.mini .info{flex:1}
+.mini .info b{font-size:14px;display:block}
+.mini .info small{font-size:11px;color:var(--dim)}
+.mini button{width:44px;height:44px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:var(--txt);font-size:18px}
+.mini button.play{background:var(--acc)}
+.notif{background:var(--green);border-radius:18px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.notif .row{display:flex;align-items:center;gap:10px}
+.notif .row b{font-size:14px}
+.notif .row small{color:rgba(255,255,255,.7);font-size:11px;display:block}
+.notif .btns{display:flex;justify-content:space-around;margin-top:10px}
+.notif .btns button{width:44px;height:44px;border:none;background:transparent;color:#fff;font-size:20px}
+.hint{font-size:11px;color:var(--dim);text-align:center;margin-top:8px}
+.name-tag{background:var(--acc);color:#fff;padding:4px 12px;border-radius:12px;font-size:13px;display:inline-block;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+<div class="name-tag" id="nametag">橙声君</div>
+<div class="phone" id="phone"></div>
+<script>
+const LINES=[
+ {o:'因为你无心的三言两语',t:'因为你无心的三言两语'},
+ {o:'キリが無いけどさ',t:'不过这事没完没了的'},
+ {o:'それを忘れたフリ疲れたよ',t:'佯装遗忘一切的我 已然筋疲力竭'},
+ {o:'夜よ抱きしめて',t:'夜晚啊 请拥抱我'},
+ {o:'今日だって笑う笑う',t:'今天 我也会笑着度过'},
+ {o:'泣いちゃう僕を隠すために笑う',t:'为了藏起泪流满面的自己而欢笑'},
+];
+const scenes=['全屏播放页·封面','全屏播放页·歌词','左右滑动中间态','迷你播放条(收缩态)','后台通知栏控制','锁屏控制'];
+let cur='全屏播放页·歌词';
+function render(){
+ const bar=document.getElementById('bar');
+ bar.innerHTML=scenes.map(s=>`<button class="${s===cur?'active':''}" onclick="pick('${s}')">${s}</button>`).join('');
+ const p=document.getElementById('phone');
+ if(cur==='全屏播放页·封面'){
+  p.innerHTML=`<div class="top">手写的从前 · 周杰伦</div><div class="cover spin">🎵</div><div class="prog"><i style="width:35%"></i></div><div class="times"><span>1:40</span><span>4:57</span></div><div class="ctrls"><button>🔁</button><button>⏮</button><button class="play">⏸</button><button>⏭</button><button>☰</button></div><div class="hint">左右滑动切歌 · 下滑收缩</div>`;
+ }else if(cur==='全屏播放页·歌词'){
+  const idx=3;
+  p.innerHTML=`<div class="top">手写的从前 · 周杰伦</div><div class="lyr">${LINES.map((l,i)=>{const c=i===idx?'cur':(Math.abs(i-idx)===1?'near':'far');return `<div class="entry ${c}"><div class="o">${l.o}</div><div class="t">${l.t}</div></div>`}).join('')}</div><div class="prog"><i style="width:35%"></i></div><div class="times"><span>1:40</span><span>4:57</span></div><div class="ctrls"><button>🔁</button><button>⏮</button><button class="play">⏸</button><button>⏭</button><button>☰</button></div>`;
+ }else if(cur==='左右滑动中间态'){
+  p.innerHTML=`<div class="top">手写的从前 · 周杰伦</div><div style="display:flex;height:420px;overflow:hidden;opacity:.9"><div style="width:40%;display:flex;align-items:center;justify-content:center;background:rgba(124,92,255,.2);border-radius:16px;margin-right:6px"><div class="cover" style="width:150px;height:150px;font-size:50px">🎵</div></div><div style="flex:1;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);border-radius:16px"><div class="lyr" style="height:360px"><div class="entry far"><div class="o">キリが無いけどさ</div></div><div class="entry cur"><div class="o">夜よ抱きしめて</div><div class="t">夜晚啊 请拥抱我</div></div></div></div></div><div class="hint">滑动中：封面(左) → 歌词(右)</div>`;
+ }else if(cur==='迷你播放条(收缩态)'){
+  p.innerHTML=`<div class="top">本地歌曲 · 150首</div><div style="height:560px;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:14px">歌曲列表（背景）</div><div class="mini"><div class="thumb">🎵</div><div class="info"><b>手写的从前</b><small>周杰伦 · SQ</small><div class="prog" style="margin:6px 0"><i style="width:35%"></i></div></div><button>⏸</button></div><div class="hint">点击或上滑迷你条 → 展开全屏（250ms）</div>`;
+ }else{
+  p.innerHTML=`<div class="top">${cur}</div><div class="notif"><div class="row"><div class="thumb" style="width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#7c5cff,#2a1b5e);display:flex;align-items:center;justify-content:center">🎵</div><div><b>手写的从前</b><small>周杰伦 · 橙声君</small></div></div><div class="prog"><i style="width:35%"></i></div><div class="times" style="color:rgba(255,255,255,.7)"><span>1:40</span><span>4:57</span></div><div class="btns"><button>⏮</button><button>⏸</button><button>⏭</button></div></div><div class="hint">通知栏/锁屏媒体控制（后台播放时显示）</div>`;
+ }
+}
+function pick(s){cur=s;render()}
+render();
+</script>
+</body>
+</html>

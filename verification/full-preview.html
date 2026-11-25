@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>橙声君 · 全面升级验证预览（Mock）</title>
+<style>
+:root{--bg-light:#fff8f3;--bg-dark:#1a1410;--orange:#f4511e;--orange-l:#ff8a50;--txt-l:#2b1a12;--txt-d:#f5ebe4;--dim-l:#8a6a58;--dim-d:#b9a395}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#ece5df;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;padding:14px;display:flex;flex-direction:column;align-items:center}
+.bar{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;max-width:900px}
+.bar button{background:#fff;border:1px solid #e0d5cd;color:#5a4436;padding:6px 10px;border-radius:16px;cursor:pointer;font-size:11px;min-height:34px}
+.bar button.active{background:var(--orange);border-color:var(--orange);color:#fff}
+.stage{width:min(100%,390px);height:800px;border-radius:26px;overflow:hidden;position:relative;background:var(--bg-light);color:var(--txt-l);box-shadow:0 16px 50px rgba(0,0,0,.18);border:1px solid #e8dcd2;display:flex;flex-direction:column}
+.stage.dark{background:var(--bg-dark);color:var(--txt-d);border-color:#3a2c22}
+.stage.wide{width:min(96vw,1440px);height:860px;flex-direction:row}
+.hdr{padding:14px 16px;font-weight:700;color:var(--orange);border-bottom:1px solid rgba(0,0,0,.06);display:flex;align-items:center;gap:8px}
+.dark .hdr{border-color:rgba(255,255,255,.08)}
+.body{flex:1;overflow:hidden;position:relative}
+/* 歌词 */
+.lyr-wrap{height:100%;position:relative;display:flex;align-items:center;justify-content:center}
+.lyr{width:100%;height:300px;overflow:hidden;position:relative;-webkit-mask-image:linear-gradient(transparent,#000 18%,#000 82%,transparent);mask-image:linear-gradient(transparent,#000 18%,#000 82%,transparent);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.entry{text-align:center;padding:10px 8px;transition:all .3s}
+.entry .o{font-size:18px;font-weight:600;line-height:1.35}
+.entry .t{font-size:12px;color:var(--dim-l);margin-top:4px}
+.dark .entry .t{color:var(--dim-d)}
+.entry.cur .o{font-size:25px;font-weight:800;color:var(--orange);text-shadow:0 0 22px rgba(244,81,30,.4)}
+.entry.near{opacity:.5;transform:scale(.9)} .entry.far{opacity:.26;transform:scale(.8)}
+.seek-prev{position:absolute;top:16px;left:50%;transform:translateX(-50%);background:var(--orange);color:#fff;padding:6px 16px;border-radius:18px;font-size:13px;font-weight:700;z-index:5}
+.center-line{position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(244,81,30,.35);z-index:2;pointer-events:none}
+/* 设置列表 */
+.settings{padding:10px 16px;overflow-y:auto;height:100%}
+.set-group{font-weight:700;color:var(--orange);margin:12px 0 6px;font-size:13px}
+.set-row{background:rgba(244,81,30,.06);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px}
+.set-row b{display:block;margin-bottom:3px}
+.set-row small{color:var(--dim-l)} .dark .set-row small{color:var(--dim-d)}
+/* 歌单 */
+.playlists{padding:14px}
+.pl{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:rgba(244,81,30,.07);margin-bottom:10px}
+.pl .ic{width:40px;height:40px;border-radius:10px;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px}
+/* 下载失败 */
+.fail{padding:24px;text-align:center}
+.fail .ic{font-size:56px;color:var(--orange)}
+.fail .reason{margin-top:14px;padding:12px;background:rgba(244,81,30,.1);border-radius:10px;color:#c62828;font-size:13px;text-align:left}
+.dark .fail .reason{color:#ff8a80}
+/* 导航 */
+.nav{display:flex;border-top:1px solid rgba(0,0,0,.08);padding:8px 0}
+.dark .nav{border-color:rgba(255,255,255,.08)}
+.nav div{flex:1;text-align:center;font-size:11px;color:var(--dim-l)}
+.dark .nav div{color:var(--dim-d)}
+.nav div.on{color:var(--orange);font-weight:700}
+/* 宽屏分栏 */
+.wide .body{display:flex}
+.wide .left{width:40%;display:flex;align-items:center;justify-content:center;background:rgba(244,81,30,.05)}
+.wide .right{flex:1;padding:16px}
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+<div class="stage" id="stage"></div>
+<script>
+const SCENES=['歌词居中·浅色','歌词居中·深色','滑动seek预览','设置页(下载路径/清缓存/自定义源)','我的歌单','下载失败提示','手机窄屏375','PC宽屏1440'];
+const L=[
+ {o:'あの時から',t:'从那时候起'},{o:'人間になりたい',t:'我想成为人类'},
+ {o:'君とはいたい',t:'我想和你在一起'},{o:'そばに行きたい',t:'我想靠近你'},
+ {o:'君の言葉',t:'你曾说过的话'},{o:'覚えてる？',t:'你还记得吗？'},
+ {o:'夜よ抱きしめて',t:'夜晚啊 请拥抱我'},{o:'今日だって笑う笑う',t:'今天我也会笑着度过'}
+];
+let scene='歌词居中·浅色';
+function render(){
+ const b=document.getElementById('bar');
+ b.innerHTML=SCENES.map(s=>`<button class="${s===scene?'active':''}" onclick="pick('${s}')">${s}</button>`).join('');
+ const st=document.getElementById('stage');
+ st.className='stage'+(scene.includes('深色')?' dark':'')+(scene.includes('宽屏')?' wide':'');
+ const body=(()=>{
+  if(scene.includes('歌词居中')||scene.includes('滑动seek')||scene.includes('窄屏')||scene.includes('宽屏')){
+   const cur=4;
+   const lyrics=L.map((l,i)=>{const c=i===cur?'cur':(Math.abs(i-cur)===1?'near':'far');return `<div class="entry ${c}"><div class="o">${l.o}</div><div class="t">${l.t}</div></div>`}).join('');
+   const seek=scene.includes('滑动seek')?`<div class="seek-prev" style="white-space:nowrap">↕ 01:42 / 03:05</div>`:'';
+   if(scene.includes('宽屏')) return `<div class="left"><div style="font-size:90px">🍊</div></div><div class="right"><div class="lyr-wrap"><div class="lyr">${lyrics}</div><div class="center-line"></div>${seek}</div></div>`;
+   return `<div class="lyr-wrap"><div class="lyr">${lyrics}</div><div class="center-line"></div>${seek}</div>`;
+  }
+  if(scene.includes('设置页')) return `<div class="settings">
+   <div class="set-group">服务器</div><div class="set-row"><b>服务器地址</b><small>http://192.168.1.15:18080</small></div>
+   <div class="set-row"><b>公网访问口令</b><small>••••••••••</small></div>
+   <div class="set-group">下载路径</div><div class="set-row"><b>当前保存目录</b><small>Documents/橙声君/downloads</small></div>
+   <div class="set-group">缓存管理（大小 12.4 MB）</div><div class="set-row"><b>清除缓存</b><small>点击一键清除临时文件</small></div>
+   <div class="set-group">自定义音乐源</div><div class="set-row"><b>API 接口 / 插件路径</b><small>https://your-api.com/ 或 plugin.js</small></div>
+  </div>`;
+  if(scene.includes('歌单')) return `<div class="playlists"><div class="pl"><div class="ic">♥</div><div><b>我喜欢</b><br><small style="color:var(--dim-l)">默认歌单 · 12 首</small></div></div><div class="pl"><div class="ic">🎵</div><div><b>通勤路上</b><br><small style="color:var(--dim-l)">自定义歌单 · 8 首</small></div></div><div class="pl"><div class="ic">🌙</div><div><b>深夜循环</b><br><small style="color:var(--dim-l)">自定义歌单 · 5 首</small></div></div></div>`;
+  return `<div class="fail"><div class="ic">⚠️</div><h3>下载失败</h3><div class="reason">HTTP 401：口令错误，请在设置里填写正确的访问口令<br><br>服务器返回 401 Unauthorized，下载请求被拒绝。</div></div>`;
+ })();
+ const rail=`<div class="nav" style="flex-direction:column;position:absolute;left:0;top:0;bottom:0;width:110px;border-top:none;border-right:1px solid rgba(0,0,0,.08);justify-content:center"><div class="on">本地音乐</div><div>下载管理</div><div>最近播放</div><div>我的歌单</div></div>`;
+ st.innerHTML=`<div class="hdr" style="${scene.includes('宽屏')?'margin-left:110px':''}">🍊 橙声君</div><div class="body" style="${scene.includes('宽屏')?'margin-left:110px':''}">${body}</div>${scene.includes('宽屏')?rail:`<div class="nav"><div class="on">本地音乐</div><div>下载管理</div><div>最近播放</div><div>我的歌单</div></div>`}`;
+}
+function pick(s){scene=s;render()}
+render();
+</script>
+</body>
+</html>

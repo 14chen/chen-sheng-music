@@ -1,0 +1,7 @@
+{
+  "id": "mycloud",
+  "name": "我的云音乐",
+  "baseUrl": "https://api.example-music.com",
+  "apiPrefix": "/api",
+  "enabled": true
+}

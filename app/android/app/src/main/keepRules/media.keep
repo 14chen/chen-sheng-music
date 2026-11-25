@@ -1,0 +1,7 @@
+# 阶段六：保护后台播放相关类，避免 R8 误裁剪导致 MediaSessionService 失效
+-keep class com.ryanheise.audioservice.** { *; }
+-keep class com.ryanheise.justaudio.** { *; }
+-keep class io.flutter.embedding.android.FlutterActivity { *; }
+-keep class com.myapp.my_music_app.MainActivity { *; }
+-keep class androidx.media3.** { *; }
+-keep interface androidx.media3.** { *; }

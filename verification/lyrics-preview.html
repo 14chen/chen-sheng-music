@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>橙声音乐 · 歌词界面预览（Mock）</title>
+<style>
+  :root{
+    --bg:#0d0d14; --panel:rgba(255,255,255,.06); --cur:#a78bfa;
+    --text:#f0f0f5; --dim:rgba(240,240,245,.55); --faint:rgba(240,240,245,.3);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:radial-gradient(1200px 600px at 50% -10%,#3b2f6b 0%,#0d0d14 60%);
+       font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text);
+       display:flex;flex-direction:column;align-items:center;padding:24px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:18px}
+  .toolbar button{background:var(--panel);border:1px solid rgba(255,255,255,.12);color:var(--text);
+       padding:8px 14px;border-radius:20px;cursor:pointer;font-size:13px}
+  .toolbar button.active{background:var(--cur);border-color:var(--cur);color:#fff}
+  .stage{width:min(100%,430px);border-radius:28px;padding:22px 18px;
+       background:linear-gradient(160deg,rgba(255,255,255,.1),rgba(255,255,255,.02));
+       border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(20px);
+       box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .stage.wide{width:min(96vw,1100px)}
+  .title{text-align:center;font-size:18px;font-weight:700;margin-bottom:4px}
+  .artist{text-align:center;font-size:12px;color:var(--dim);margin-bottom:12px}
+  .lyrics{height:420px;overflow:hidden;position:relative;
+          -webkit-mask-image:linear-gradient(transparent,#000 18%,#000 82%,transparent);
+          mask-image:linear-gradient(transparent,#000 18%,#000 82%,transparent)}
+  /* 词条间距：每行之间留足呼吸空间，避免译文贴下一行原文 */
+  .entry{text-align:center;padding:16px 8px;margin-bottom:10px;transition:all .35s cubic-bezier(.2,.8,.2,1)}
+  .entry .orig{font-size:18px;font-weight:600;line-height:1.4}
+  .entry .trans{font-size:13px;margin-top:8px;line-height:1.5}
+  .entry.cur .orig{font-size:27px;font-weight:800;color:var(--cur);text-shadow:0 0 26px rgba(167,139,250,.55)}
+  .entry.cur .trans{font-size:15px;margin-top:9px;color:rgba(240,240,245,.9)}
+  .entry.near{opacity:.5;transform:scale(.9)}
+  .entry.far{opacity:.26;transform:scale(.8)}
+  /* 宽屏：放大舞台与字号，充分利用空间 */
+  .stage.wide .lyrics{height:520px}
+  .stage.wide .entry{padding:20px 60px;margin-bottom:14px}
+  .stage.wide .entry .orig{font-size:24px}
+  .stage.wide .entry .trans{font-size:16px;margin-top:10px}
+  .stage.wide .entry.cur .orig{font-size:36px}
+  .stage.wide .entry.cur .trans{font-size:18px}
+  .stage.wide .title{font-size:24px}
+  .stage.wide .empty{font-size:18px}
+  .entry.untranslated .trans{font-style:italic;color:var(--faint)}
+  .empty{text-align:center;color:var(--dim);padding:120px 0;font-size:14px}
+  .stats{font-size:11px;color:var(--faint);text-align:center;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="toolbar" id="toolbar"></div>
+<div class="stage" id="stage"></div>
+
+<script>
+// Mock 数据：覆盖双语、缺译、翻译超长、无歌词、纯原文
+const scenes = {
+  '双语歌词滚动中': {
+    title:'ただ声一つ (只想说)', artist:'ロクデナシ',
+    stats:{originalLines:6,translatedLines:6,emptyTranslations:0,truncatedLines:0},
+    lines:[
+      {o:'因为你无心的三言两语', t:'因为你无心的三言两语', status:'translated'},
+      {o:'キリが無いけどさ', t:'不过这事没完没了的', status:'translated'},
+      {o:'それを忘れたフリ疲れたよ', t:'佯装遗忘一切的我 已然筋疲力竭', status:'translated'},
+      {o:'夜よ抱きしめて', t:'夜晚啊 请拥抱我', status:'translated', cur:true},
+      {o:'今日だって笑う笑う', t:'今天 我也会笑着度过', status:'translated'},
+      {o:'泣いちゃう僕を隠すために笑う', t:'为了藏起泪流满面的自己而欢笑', status:'translated'},
+    ]
+  },
+  '翻译缺失行': {
+    title:'Lost Village', artist:'Javolenus',
+    stats:{originalLines:4,translatedLines:2,emptyTranslations:2,truncatedLines:0},
+    lines:[
+      {o:'Walking through the forest', t:'穿过森林', status:'translated'},
+      {o:'The wind is calling my name', t:'无翻译', status:'untranslated'},
+      {o:'Shadows on the ground', t:'地面上的影子', status:'translated', cur:true},
+      {o:'Echoes fade away', t:'无翻译', status:'untranslated'},
+    ]
+  },
+  '翻译超长': {
+    title:'A Very Long Translation', artist:'Test Artist',
+    stats:{originalLines:3,translatedLines:3,emptyTranslations:0,truncatedLines:0},
+    lines:[
+      {o:'Short line', t:'短句', status:'translated'},
+      {o:'This is a very long original line that keeps going and going',
+       t:'这是一段非常非常长的中文翻译，用来验证长文本是否会正确换行而不是被截断或挤掉原文的显示空间，需要完整展示', status:'translated', cur:true},
+      {o:'Another line', t:'另一句', status:'translated'},
+    ]
+  },
+  '无歌词': {title:'测试音 - 440Hz',artist:'未知艺术家',stats:{},lines:[]},
+  '纯原文（中文不译）': {
+    title:'02的爱恋', artist:'多多poi',
+    stats:{originalLines:3,translatedLines:0,emptyTranslations:0,truncatedLines:0},
+    lines:[
+      {o:'我爱你', t:'', status:'not_required'},
+      {o:'你和我一直在一起', t:'', status:'not_required', cur:true},
+      {o:'我一直爱你', t:'', status:'not_required'},
+    ]
+  }
+};
+
+let current = '双语歌词滚动中';
+let wide = false;
+function render(){
+  const s = scenes[current];
+  const tb = document.getElementById('toolbar');
+  tb.innerHTML = Object.keys(scenes).map(k=>`<button class="${k===current?'active':''}" onclick="pick('${k}')">${k}</button>`).join('')
+    + `<button onclick="toggleWide()" class="${wide?'active':''}">${wide?'宽屏 1920':'窄屏 375'}</button>`;
+  const stage = document.getElementById('stage');
+  stage.className = 'stage' + (wide?' wide':'');
+  const body = s.lines.length===0
+    ? `<div class="empty">暂无歌词</div>`
+    : `<div class="lyrics">${s.lines.map((l,i)=>{
+        const cur = l.cur?0:i;
+        const cls = l.cur?'cur':(Math.abs(i-s.lines.findIndex(x=>x.cur))===1?'near':'far');
+        return `<div class="entry ${cls} ${l.status==='untranslated'?'untranslated':''}">
+          <div class="orig">${l.o}</div>${l.t?`<div class="trans">${l.t}</div>`:''}</div>`;
+      }).join('')}</div>`;
+  const st = s.stats.originalLines!==undefined
+    ? `<div class="stats">原文 ${s.stats.originalLines} 行 · 已译 ${s.stats.translatedLines} 行 · 空译 ${s.stats.emptyTranslations} 行 · 半截 ${s.stats.truncatedLines} 行</div>` : '';
+  stage.innerHTML = `<div class="title">${s.title}</div><div class="artist">${s.artist}</div>${body}${st}`;
+}
+function pick(k){current=k;render()}
+function toggleWide(){wide=!wide;render()}
+render();
+</script>
+</body>
+</html>

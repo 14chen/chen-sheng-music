@@ -1,0 +1,22 @@
+# 敏感配置（口令/Jamendo key）——只提交 .env.example
+server/.env
+
+# 依赖与构建产物
+server/node_modules/
+app/build/
+app/.dart_tool/
+app/.idea/
+server/downloads/
+server/data/
+
+# 运行日志与临时验证产物
+logs/
+verification/screenshots/
+verification/dummy-music/
+
+# 验证工具依赖与 Android 构建报告
+verification/node_modules/
+app/android/build/
+
+# 二进制工具
+tools/

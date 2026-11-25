@@ -1,0 +1,4 @@
+Installed packages:
+[33m  cmdline-tools/latest         unknown   ->        23.0.0  Android SDK Command-line Tools (latest)[39m[0m
+[32m  platform-tools               37.0.3                      Android SDK Platform-Tools             [39m[0m
+
